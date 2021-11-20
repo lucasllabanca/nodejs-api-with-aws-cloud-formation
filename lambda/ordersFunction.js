@@ -37,18 +37,29 @@ exports.handler = async function (event, context) {
                         //GET /orders?email=lucasllabanca@gmail.com&orderId=123-456
                         console.log('Get a user order by orderId')
 
-                        return {
-                            statusCode: 200,
-                            body: JSON.stringify('Get a user order by orderId')
-                        }
+                        const data = await getOrder(event.queryStringParameters.email, event.queryStringParameters.orderId)
+
+                        if (data.Item) {
+                            return {
+                                statusCode: 200,
+                                body: JSON.stringify(convertToOrderResponse(data.Item))
+                            }
+                        } else {
+                            return {
+                                statusCode: 404,
+                                body: JSON.stringify('Order not found')
+                            }
+                        }             
 
                     } else {
                         //GET /orders?email=lucasllabanca@gmail.com
                         console.log('Get all orders from a user')
 
+                        const data = await getOrdersByEmail(event.queryStringParameters.email)
+
                         return {
                             statusCode: 200,
-                            body: JSON.stringify('Get all orders from a user')
+                            body: JSON.stringify(data.Items.map(convertToOrderResponse))
                         }
 
                     }
@@ -59,9 +70,11 @@ exports.handler = async function (event, context) {
                 //GET /orders
                 console.log('Get all orders')
 
+                const data = await getAllOrders()
+                
                 return {
                     statusCode: 200,
-                    body: JSON.stringify('Get all orders')
+                    body: JSON.stringify(data.Items.map(convertToOrderResponse))
                 }
 
             }
@@ -101,11 +114,20 @@ exports.handler = async function (event, context) {
             //DELETE /orders?email=lucasllabanca@gmail.com&orderId=123-456
             console.log('Delete an order')
 
-            return {
-                statusCode: 200,
-                body: JSON.stringify('Delete an order')
-            }
+            //nao vai validar os QueryStrings pq vai fazer isso no api gateway pra torna-los obrigatorios, senao nem chama
+            const data = await deleteOrder(event.queryStringParameters.email, event.queryStringParameters.orderId)
 
+            if (data.Attributes) {
+                return {
+                    statusCode: 200,
+                    body: JSON.stringify(convertToOrderResponse(data.Attributes))
+                }
+            } else {
+                return {
+                    statusCode: 404,
+                    body: JSON.stringify('Order not found')
+                }
+            }
         }
     }
 
@@ -113,6 +135,58 @@ exports.handler = async function (event, context) {
         statusCode: 400,
         body: JSON.stringify('Bad request')
     }
+}
+
+function deleteOrder(email, orderId) {
+
+    const params = {
+        TableName: ordersDdb,
+        Key: {
+            pk: email,
+            sk: orderId
+        },
+        ReturnValues: "ALL_OLD"
+    }
+
+    return ddbClient.delete(params).promise()
+}
+
+function getOrder(email, orderId) {
+
+    const params = {
+        TableName: ordersDdb,
+        Key: {
+            pk: email,
+            sk: orderId
+        }     
+    }
+
+    return ddbClient.get(params).promise()
+
+}
+
+function getOrdersByEmail(email) {
+
+    const params = {
+        TableName: ordersDdb,
+        KeyConditionExpression: "pk = :email",
+        ExpressionAttributeValues: {
+            ":email": email
+        }
+    }
+
+    return ddbClient.query(params).promise()
+
+}
+
+function getAllOrders() {
+
+    const params = {
+        TableName: ordersDdb
+    }
+
+    return ddbClient.scan(params).promise()
+
 }
 
 function fetchProducts(orderRequest) {
