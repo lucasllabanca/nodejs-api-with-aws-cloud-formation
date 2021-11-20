@@ -1,21 +1,51 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from '@aws-cdk/core';
-import { ECommercePosStack } from '../lib/e_commerce_pos-stack';
+import { ProductsFunctionStack } from '../lib/stacks/productsFunction-stack';
+import { EcommerceApiStack } from '../lib/stacks/ecommerceApi-stack';
+import { ProductsDdbStack } from '../lib/stacks/productsDdb-stack';
+import { EventsDdbStack } from '../lib/stacks/eventsDdb-stack';
 
 const app = new cdk.App();
-new ECommercePosStack(app, 'ECommercePosStack', {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
 
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-  // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
+//regiao e num conta do console aws
+const environment = {
+  region: "us-east-1",
+  account: "322605363175"
+}
 
-  /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
-  // env: { account: '123456789012', region: 'us-east-1' },
+//Tags para usar filtros no aws para as tags
+//Daria pra filtrar os gastos da tag Inatel para todos recursos
+const tags = {
+  cost: "ECommerce",
+  team: "Inatel"
+}
 
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
+const productsDdbStack = new ProductsDdbStack(app, "ProductsDdb", {
+  env: environment,
+  tags: tags,
+})
+
+const eventsDdbStack = new EventsDdbStack(app, "EventsDdb", {
+  env: environment,
+  tags: tags,
+})
+
+const productsFunctionStack = new ProductsFunctionStack(app, "ProductsFunction", {
+  env: environment,
+  tags: tags,
+  productsDdb: productsDdbStack.table,
+  eventsDdb: eventsDdbStack.table
 });
+
+productsFunctionStack.addDependency(productsDdbStack)
+productsFunctionStack.addDependency(eventsDdbStack)
+
+const eCommerceApiStack = new EcommerceApiStack(app, "ECommerceApi", {
+  productsHandler: productsFunctionStack.productsHandler,
+  env: environment,
+  tags: tags
+});
+
+//Esteira de pipeline, assim mostra as dependecias pra criar uma antes de outra
+eCommerceApiStack.addDependency(productsFunctionStack)
