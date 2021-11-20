@@ -39,6 +39,42 @@ export class EcommerceApiStack extends cdk.Stack {
 
         const productsFunctionIntegration = new apigateway.LambdaIntegration(props.productsHandler);
 
+        const productRequestValidator = new apigateway.RequestValidator(this, "ProductRequestValidator", {
+            restApi: api,
+            requestValidatorName: "Product request validator",
+            validateRequestBody: true
+        })
+
+        const productModel = new apigateway.Model(this, "ProductModel", {
+            modelName: "ProductModel",
+            restApi: api,
+            contentType: "application/json",
+            schema: {
+                type: apigateway.JsonSchemaType.OBJECT,
+                properties: {
+                    productName: {
+                        type: apigateway.JsonSchemaType.STRING
+                    },
+                    code: {
+                        type: apigateway.JsonSchemaType.STRING
+                    },
+                    price: {
+                        type: apigateway.JsonSchemaType.NUMBER
+                    },
+                    model: {
+                        type: apigateway.JsonSchemaType.STRING
+                    },
+                    productUrl: {
+                        type: apigateway.JsonSchemaType.STRING
+                    }                  
+                },
+                required: [
+                    "productName",
+                    "code"
+                ]
+            }
+        })
+
         // /products
         const productsResource = api.root.addResource("products"); //da pra passar default integration
 
@@ -46,13 +82,19 @@ export class EcommerceApiStack extends cdk.Stack {
         productsResource.addMethod("GET", productsFunctionIntegration);
 
         //POST /products
-        productsResource.addMethod("POST", productsFunctionIntegration);
+        productsResource.addMethod("POST", productsFunctionIntegration, {
+            requestValidator: productRequestValidator,
+            requestModels: {"application/json": productModel}
+        })
 
         // /products/{id}
         const productByIdResource = productsResource.addResource("{id}")
 
         //GET /products/{id}
-        productByIdResource.addMethod("GET", productsFunctionIntegration)
+        productByIdResource.addMethod("GET", productsFunctionIntegration, {
+            requestValidator: productRequestValidator,
+            requestModels: {"application/json": productModel}
+        })
 
         //PUT /products/{id}
         productByIdResource.addMethod("PUT", productsFunctionIntegration)
