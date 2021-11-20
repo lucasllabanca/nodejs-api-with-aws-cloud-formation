@@ -5,6 +5,7 @@ import { ProductsFunctionStack } from '../lib/stacks/productsFunction-stack';
 import { EcommerceApiStack } from '../lib/stacks/ecommerceApi-stack';
 import { ProductsDdbStack } from '../lib/stacks/productsDdb-stack';
 import { EventsDdbStack } from '../lib/stacks/eventsDdb-stack';
+import { OrdersApplicationStack } from '../lib/stacks/ordersApplication-stack';
 
 const app = new cdk.App();
 
@@ -41,11 +42,21 @@ const productsFunctionStack = new ProductsFunctionStack(app, "ProductsFunction",
 productsFunctionStack.addDependency(productsDdbStack)
 productsFunctionStack.addDependency(eventsDdbStack)
 
+const ordersApplicationStack = new OrdersApplicationStack(app, "OrdersApplication", {
+  productsDdb: productsDdbStack.table,
+  env: environment,
+  tags: tags,
+})
+
+ordersApplicationStack.addDependency(productsDdbStack)
+
 const eCommerceApiStack = new EcommerceApiStack(app, "ECommerceApi", {
   productsHandler: productsFunctionStack.productsHandler,
+  ordersHandler: ordersApplicationStack.ordersHandler,
   env: environment,
   tags: tags
 });
 
 //Esteira de pipeline, assim mostra as dependecias pra criar uma antes de outra
 eCommerceApiStack.addDependency(productsFunctionStack)
+eCommerceApiStack.addDependency(ordersApplicationStack)

@@ -5,7 +5,8 @@ import * as lambdaNodeJS from "@aws-cdk/aws-lambda-nodejs";
 
 //interface pra conseguir passar varios stack handlers ao mesmo tempo,e nao ficar com 30 parametros
 interface EcommerceApiStackProps extends cdk.StackProps {
-    productsHandler: lambdaNodeJS.NodejsFunction
+    productsHandler: lambdaNodeJS.NodejsFunction,
+    ordersHandler: lambdaNodeJS.NodejsFunction
 }
 
 export class EcommerceApiStack extends cdk.Stack {
@@ -59,9 +60,26 @@ export class EcommerceApiStack extends cdk.Stack {
         //DELETE /products/{id}
         productByIdResource.addMethod("DELETE", productsFunctionIntegration)
 
+        const ordersFunctionIntegration = new apigateway.LambdaIntegration(props.ordersHandler)
+        // resource - /orders   
+        const ordersResource = api.root.addResource("orders")
+
+        //GET /orders
+        //GET /orders?email=lucasllabanca@gmail.com
+        //GET /orders?email=lucasllabanca@gmail.com&orderId=123-456
+        ordersResource.addMethod("GET", ordersFunctionIntegration)
+
+        //DELETE /orders?email=lucasllabanca@gmail.com&orderId=123-456
+        ordersResource.addMethod("DELETE", ordersFunctionIntegration)
+
+        //POST /orders
+        ordersResource.addMethod("POST", ordersFunctionIntegration)
+
         this.urlOutput = new cdk.CfnOutput(this, "url", {
             exportName: "url",
             value: api.url,
         });
+
+
     }
 }
