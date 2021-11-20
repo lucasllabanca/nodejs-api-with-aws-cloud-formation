@@ -70,7 +70,16 @@ export class EcommerceApiStack extends cdk.Stack {
         ordersResource.addMethod("GET", ordersFunctionIntegration)
 
         //DELETE /orders?email=lucasllabanca@gmail.com&orderId=123-456
-        ordersResource.addMethod("DELETE", ordersFunctionIntegration)
+        ordersResource.addMethod("DELETE", ordersFunctionIntegration, {
+            requestParameters: {
+                'method.request.querystring.email': true, //tornando os parametros obrigatorios
+                'method.request.querystring.orderId': true
+            },
+            requestValidatorOptions: {
+                requestValidatorName: 'Email and OrderId parameters validator',
+                validateRequestParameters: true
+            }
+        })
 
         //POST /orders
         ordersResource.addMethod("POST", ordersFunctionIntegration)
