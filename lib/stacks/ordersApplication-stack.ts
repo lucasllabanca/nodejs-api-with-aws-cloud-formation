@@ -45,7 +45,10 @@ export class OrdersApplicationStack extends cdk.Stack {
                 minify: false,
                 sourceMap: false,
             }
-        });
+        })
+
+        ordersDdb.grantReadWriteData(this.ordersHandler)
+        props.productsDdb.grantReadData(this.ordersHandler)
 
     }
 
