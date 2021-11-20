@@ -91,13 +91,13 @@ export class EcommerceApiStack extends cdk.Stack {
         const productByIdResource = productsResource.addResource("{id}")
 
         //GET /products/{id}
-        productByIdResource.addMethod("GET", productsFunctionIntegration, {
+        productByIdResource.addMethod("GET", productsFunctionIntegration)
+
+        //PUT /products/{id}
+        productByIdResource.addMethod("PUT", productsFunctionIntegration, {
             requestValidator: productRequestValidator,
             requestModels: {"application/json": productModel}
         })
-
-        //PUT /products/{id}
-        productByIdResource.addMethod("PUT", productsFunctionIntegration)
 
         //DELETE /products/{id}
         productByIdResource.addMethod("DELETE", productsFunctionIntegration)
