@@ -35,6 +35,30 @@ export class OrdersApplicationStack extends cdk.Stack {
             writeCapacity: 1,
         })
 
+        //Criando uma configuracao de Auto Scaling pra leitura
+        const readScale = ordersDdb.autoScaleReadCapacity({
+            maxCapacity: 4,
+            minCapacity: 1
+        })
+
+        readScale.scaleOnUtilization({
+            targetUtilizationPercent: 50, //quando chegar em 50% do provisionado escala
+            scaleInCooldown: cdk.Duration.seconds(60), //tempo de espera até escalar de novo se necessario
+            scaleOutCooldown: cdk.Duration.seconds(60), //tempo pra esperar a cada diminuicao do escalonamento
+        })
+
+        //Criando uma configuracao de Auto Scaling pra escrita
+        const writeScale = ordersDdb.autoScaleWriteCapacity({
+            maxCapacity: 4,
+            minCapacity: 1
+        })
+
+        writeScale.scaleOnUtilization({
+            targetUtilizationPercent: 50, //quando chegar em 50% do provisionado escala
+            scaleInCooldown: cdk.Duration.seconds(60), //tempo de espera até escalar de novo se necessario
+            scaleOutCooldown: cdk.Duration.seconds(60), //tempo pra esperar a cada diminuicao do escalonamento
+        })
+
         const ordersTopic = new sns.Topic(this, "OrderEventsTopic", {
             topicName: "order-events",
             displayName: "Order events topic"
@@ -68,7 +92,7 @@ export class OrdersApplicationStack extends cdk.Stack {
             entry: "lambda/orderEventsFunction.js", //codigo que vai ser executado
             handler: "handler", //nome do metodo que vai ser invocado no arquivo
             memorySize: 128,
-            timeout: cdk.Duration.seconds(30),
+            timeout: cdk.Duration.seconds(30), //Prof mudou pra 10 pra fazer um teste de um problema com multiplas chamadas
             tracing: lambda.Tracing.ACTIVE, //habilita a funcao lambda pra gerar servicos do x-ray
             insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_98_0,
             environment: {
