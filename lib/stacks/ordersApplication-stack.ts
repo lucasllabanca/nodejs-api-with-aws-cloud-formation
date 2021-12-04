@@ -108,8 +108,14 @@ export class OrdersApplicationStack extends cdk.Stack {
             queueName: "order-events"
         })
 
-        //Inscreveu ela no Topic
-        ordersTopic.addSubscription(new subs.SqsSubscription(orderEventsQueue))
+        //Inscreveu ela no Topic e filtrou somente pra ORDER_CREATED eventType
+        ordersTopic.addSubscription(new subs.SqsSubscription(orderEventsQueue, {
+            filterPolicy: {
+                eventType: sns.SubscriptionFilter.stringFilter({
+                    allowlist: ['ORDER_CREATED']
+                })
+            }
+        }))
 
         const orderEmailsHandler = new lambdaNodeJS.NodejsFunction(this, "OrderEmailsFunction", {
             functionName: "OrderEmailsFunction",
