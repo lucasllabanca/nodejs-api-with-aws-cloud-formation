@@ -131,7 +131,11 @@ export class OrdersApplicationStack extends cdk.Stack {
             }
         });
 
-        orderEmailsHandler.addEventSource(new lambdaEventSource.SqsEventSource(orderEventsQueue))
+        //A cada 1min vai buscar no maximo 5 msgs do topico sns e traz pro sqs
+        orderEmailsHandler.addEventSource(new lambdaEventSource.SqsEventSource(orderEventsQueue, {
+            batchSize: 5,
+            maxBatchingWindow: cdk.Duration.minutes(1)    
+        }))
         orderEventsQueue.grantConsumeMessages(orderEmailsHandler)
 
     }
