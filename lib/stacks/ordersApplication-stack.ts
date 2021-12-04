@@ -90,8 +90,16 @@ export class OrdersApplicationStack extends cdk.Stack {
             }
         })
 
+        //Props pra filtrar as msgs que eu recebo e foram passadas por MessageAttributes na ordersFunction.js
+        //Tem que ser tipo stringFilter pq defini como DataType: "String"
         orderEventsHandler.addToRolePolicy(eventsDdbPolicy)
-        ordersTopic.addSubscription(new subs.LambdaSubscription(orderEventsHandler))
+        ordersTopic.addSubscription(new subs.LambdaSubscription(orderEventsHandler, {
+            filterPolicy: {
+                eventType: sns.SubscriptionFilter.stringFilter({
+                    allowlist: ['ORDER_CREATED']
+                })
+            }
+        }))
 
     }
 

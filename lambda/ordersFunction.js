@@ -174,6 +174,7 @@ function sendOrderEvent(order, eventType, lambdaRequestId) {
         requestId: lambdaRequestId
     }
 
+    //Com o MessageAttributes abaixo, nao precisaria mais desse envelope
     const envelope = {
         eventType: eventType,
         data: JSON.stringify(orderEvent)
@@ -181,7 +182,13 @@ function sendOrderEvent(order, eventType, lambdaRequestId) {
 
     const params = {
         Message: JSON.stringify(envelope),
-        TopicArn: orderEventTopicArn
+        TopicArn: orderEventTopicArn,
+        MessageAttributes: {
+            eventType: {
+                DataType: "String",
+                StringValue: eventType
+            }
+        }
     }
 
     return snsClient.publish(params).promise()
