@@ -176,7 +176,7 @@ function sendOrderEvent(order, eventType, lambdaRequestId) {
 
     const envelope = {
         eventType: eventType,
-        data: orderEvent
+        data: JSON.stringify(orderEvent)
     }
 
     const params = {
