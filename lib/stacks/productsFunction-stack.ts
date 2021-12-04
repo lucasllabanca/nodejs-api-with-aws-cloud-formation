@@ -3,6 +3,7 @@ import * as lambdaNodeJS from "@aws-cdk/aws-lambda-nodejs";
 import * as cdk from "@aws-cdk/core";
 import * as dynamodb from "@aws-cdk/aws-dynamodb"
 import * as iam from "@aws-cdk/aws-iam"
+import * as sqs from "@aws-cdk/aws-sqs"
 
 interface ProductsFunctionStackProps extends cdk.StackProps {
     productsDdb: dynamodb.Table,
@@ -14,6 +15,13 @@ export class ProductsFunctionStack extends cdk.Stack {
 
     constructor(scope: cdk.Construct, id: string, props: ProductsFunctionStackProps) {
         super(scope, id, props);
+
+        //Criando a DLQ pra ser usada na productEventsFunction - Exercicio final Cap14
+        //Adiciono ela abaixo no handler de productEventsHandler
+        const orderEventsDlq = new sqs.Queue(this, "ProductEventsDlq", {
+            queueName: "product-events-dlq",
+            retentionPeriod: cdk.Duration.days(10)     
+        })
 
         //aqui criou como constante pq essa stack que precisa reconhecer essa nova funcao e no o gateway
         const productEventsHandler = new lambdaNodeJS.NodejsFunction(this, "ProductEventsFunction", {
@@ -30,7 +38,9 @@ export class ProductsFunctionStack extends cdk.Stack {
             bundling: {
                 minify: false,
                 sourceMap: false,
-            }
+            },
+            deadLetterQueueEnabled: true,
+            deadLetterQueue: orderEventsDlq
         });
 
         //props.eventsDdb.grantWriteData(productEventsHandler) - Comentado como exercicio pois agora é por meio de Policy

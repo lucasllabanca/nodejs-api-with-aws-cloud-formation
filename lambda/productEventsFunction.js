@@ -17,6 +17,10 @@ const ddbClient = new AWS.DynamoDB.DocumentClient()
 //event: aqui tah um evento e aqui as informacoes de quem a triggou
 //context: informacoes de onde tah executando, info contextuais
 exports.handler = async function (event, context) {
+
+    //Exceccao de proposito pra testar a DLQ
+    //throw 'Non valid event type'
+
     console.log(event)
 
     //pelo menos a ultima operacao assincrona que faço preciso aguardar, pra retornar pra quem chamou

@@ -103,9 +103,19 @@ export class OrdersApplicationStack extends cdk.Stack {
             }
         }))
 
+        //Criou a DLQ pra ser usada na SQS, a cada 3 tentativas de tratar e der excecao, manda pra DLQ
+        const orderEventsDlq = new sqs.Queue(this, "OrderEventsDlq", {
+            queueName: "order-events-dlq",
+            retentionPeriod: cdk.Duration.days(10)     
+        })
+
         //Criou a fila SQS
         const orderEventsQueue = new sqs.Queue(this, "OrderEventsQueue", {
-            queueName: "order-events"
+            queueName: "order-events",
+            deadLetterQueue: {
+                queue: orderEventsDlq,
+                maxReceiveCount: 3
+            }
         })
 
         //Inscreveu ela no Topic e filtrou somente pra ORDER_CREATED eventType
@@ -136,6 +146,7 @@ export class OrdersApplicationStack extends cdk.Stack {
             batchSize: 5,
             maxBatchingWindow: cdk.Duration.minutes(1)    
         }))
+
         orderEventsQueue.grantConsumeMessages(orderEmailsHandler)
 
     }
