@@ -8,6 +8,7 @@ const xRay = AWSXray.captureAWS(require("aws-sdk"))
 const productsDdb = process.env.PRODUCTS_DDB
 const ordersDdb = process.env.ORDERS_DDB
 const awsRegion = process.env.awsRegion
+const orderEventTopicArn = process.env.ORDER_EVENTS_TOPIC_ARN
 
 AWS.config.update({
     region: awsRegion
@@ -15,6 +16,7 @@ AWS.config.update({
 
 //preciso criar um cliente do DynamoDB
 const ddbClient = new AWS.DynamoDB.DocumentClient()
+const snsClient = new AWS.SNS({apiVersion: "2010-03-31"})
 
 exports.handler = async function (event, context) {
     const method = event.httpMethod;
@@ -98,6 +100,10 @@ exports.handler = async function (event, context) {
 
                 const orderCreated = await createOrder(orderRequest, products)
 
+                const eventResult = await sendOrderEvent(orderCreated, "ORDER_CREATED", lambdaRequestId)
+
+                console.log(`Order created event sent - Order: ${orderCreated.sk} - MessageId: ${eventResult.MessageId}`)
+
                 return {
                     statusCode: 201,
                     body: JSON.stringify(convertToOrderResponse(orderCreated))
@@ -118,6 +124,11 @@ exports.handler = async function (event, context) {
             const data = await deleteOrder(event.queryStringParameters.email, event.queryStringParameters.orderId)
 
             if (data.Attributes) {
+
+                const eventResult = await sendOrderEvent(data.Attributes, "ORDER_DELETED", lambdaRequestId)
+
+                console.log(`Order created event sent - Order: ${data.Attributes.sk} - MessageId: ${eventResult.MessageId}`)
+
                 return {
                     statusCode: 200,
                     body: JSON.stringify(convertToOrderResponse(data.Attributes))
@@ -135,6 +146,46 @@ exports.handler = async function (event, context) {
         statusCode: 400,
         body: JSON.stringify('Bad request')
     }
+}
+
+function sendOrderEvent(order, eventType, lambdaRequestId) {
+    /*
+        {
+            "eventType": "ORDER_CREATED",
+            "data": {
+                "email": "lucas@gmail.com",
+                "orderId" "123-abc",
+                "requestId": "321-cba"
+            }
+        }
+    */
+
+    const productCodes = []
+    order.products.forEach((product) => {
+        productCodes.push(product.code)
+    })
+
+    const orderEvent = {
+        email: order.pk,
+        orderId: order.sk,
+        billing: order.billing,
+        shipping: order.shipping,
+        productCodes: productCodes,
+        requestId: lambdaRequestId
+    }
+
+    const envelope = {
+        eventType: eventType,
+        data: orderEvent
+    }
+
+    const params = {
+        Message: JSON.stringify(envelope),
+        TopicArn: orderEventTopicArn
+    }
+
+    return snsClient.publish(params).promise()
+
 }
 
 function deleteOrder(email, orderId) {

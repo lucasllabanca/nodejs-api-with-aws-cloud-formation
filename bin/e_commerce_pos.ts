@@ -44,6 +44,7 @@ productsFunctionStack.addDependency(eventsDdbStack)
 
 const ordersApplicationStack = new OrdersApplicationStack(app, "OrdersApplication", {
   productsDdb: productsDdbStack.table,
+  eventsDdb: eventsDdbStack.table,
   env: environment,
   tags: tags,
 })
