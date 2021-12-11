@@ -30,11 +30,14 @@ export class OrdersApplicationStack extends cdk.Stack {
                 type: dynamodb.AttributeType.STRING
             },
             removalPolicy: cdk.RemovalPolicy.DESTROY, //RETAIN mantem o banco mesmo apagando a stack
-            billingMode: dynamodb.BillingMode.PROVISIONED, //capacidade provisionada fixa
+            billingMode: dynamodb.BillingMode.PAY_PER_REQUEST, //capacidade provisionada fixa //PROVISIONED
+            /*
             readCapacity: 1,
-            writeCapacity: 1,
+            writeCapacity: 1,*/
         })
+        
 
+        /*Comentou abaixo pq passou pra modo on demand
         //Criando uma configuracao de Auto Scaling pra leitura
         const readScale = ordersDdb.autoScaleReadCapacity({
             maxCapacity: 4,
@@ -57,7 +60,7 @@ export class OrdersApplicationStack extends cdk.Stack {
             targetUtilizationPercent: 50, //quando chegar em 50% do provisionado escala
             scaleInCooldown: cdk.Duration.seconds(60), //tempo de espera até escalar de novo se necessario
             scaleOutCooldown: cdk.Duration.seconds(60), //tempo pra esperar a cada diminuicao do escalonamento
-        })
+        })*/
 
         const ordersTopic = new sns.Topic(this, "OrderEventsTopic", {
             topicName: "order-events",
