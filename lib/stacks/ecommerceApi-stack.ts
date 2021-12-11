@@ -23,6 +23,12 @@ export class EcommerceApiStack extends cdk.Stack {
             restApiName: "ECommerceApi",
             description: "This is the ECommerce API service",
             deployOptions: {
+                methodOptions: {
+                    '/*/*': { //todos os resources, dá pra especificar um ou mais
+                        throttlingBurstLimit: 4, //num requisicoes simultaneas
+                        throttlingRateLimit: 2 //requisicoes por segundo
+                    }
+                },
                 accessLogDestination: new apigateway.LogGroupLogDestination(logGroup),
                 accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields({
                     caller: true,
@@ -87,6 +93,35 @@ export class EcommerceApiStack extends cdk.Stack {
             requestValidator: productRequestValidator,
             requestModels: {"application/json": productModel}
         })
+
+        /*const key = api.addApiKey("ApiKey")
+
+        const plan = api.addUsagePlan("UsagePlan", {
+            name: "Basic",
+            throttle: {
+                rateLimit: 4, //requisicoes por segundo
+                burstLimit: 2 //requisicoes simultaneas
+            },
+            quota: {
+                limit: 5, //num de requisicoes em um periodo
+                period: apigateway.Period.DAY
+            }
+        })
+
+        plan.addApiKey(key)
+
+        plan.addApiStage({
+            stage: api.deploymentStage,
+            throttle: [
+                {
+                    method: postOrder, //declarar const pra receber o productsResource POST
+                    throttle: {
+                        rateLimit: 4, //requisicoes por segundo
+                        burstLimit: 2 //requisicoes simultaneas
+                    }
+                }
+            ]
+        })*/
 
         // /products/{id}
         const productByIdResource = productsResource.addResource("{id}")
@@ -181,8 +216,7 @@ export class EcommerceApiStack extends cdk.Stack {
         const orderEventsValidator = new apigateway.RequestValidator(this, "OrderEventsValidator", {
             restApi: api,
             requestValidatorName: "Order events fetch parameters",
-            validateRequestParameters: true,
-
+            validateRequestParameters: true
         })
 
         orderEventsResource.addMethod("GET", orderEventsFunctionIntegration, {
