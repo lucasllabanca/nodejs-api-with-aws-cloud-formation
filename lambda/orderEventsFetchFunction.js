@@ -30,7 +30,7 @@ exports.handler = async function (event, context) {
         const eventType = event.queryStringParameters.eventType
 
         if (method === 'GET') { //nao precisaria tbm, configurado no gateway
-            if (email & eventType) {
+            if (email && eventType) {
 
                 const data = await getOrderEventsByEmailAndEventType(email, eventType)
 
