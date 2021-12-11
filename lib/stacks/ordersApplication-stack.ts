@@ -15,6 +15,7 @@ interface OrdersApplicationStackProps extends cdk.StackProps {
 
 export class OrdersApplicationStack extends cdk.Stack {
     readonly ordersHandler: lambdaNodeJS.NodejsFunction //aqui precisava expor pro api gateway 
+    readonly orderEventsFetchHandler: lambdaNodeJS.NodejsFunction
     
     constructor(scope: cdk.Construct, id: string, props: OrdersApplicationStackProps) {
         super(scope, id, props);
@@ -125,7 +126,7 @@ export class OrdersApplicationStack extends cdk.Stack {
         ordersTopic.addSubscription(new subs.LambdaSubscription(orderEventsHandler, {
             filterPolicy: {
                 eventType: sns.SubscriptionFilter.stringFilter({
-                    allowlist: ['ORDER_CREATED']
+                    allowlist: ['ORDER_CREATED', 'ORDER_DELETED']
                 })
             }
         }))
@@ -175,6 +176,32 @@ export class OrdersApplicationStack extends cdk.Stack {
         }))
 
         orderEventsQueue.grantConsumeMessages(orderEmailsHandler)
+
+        this.orderEventsFetchHandler = new lambdaNodeJS.NodejsFunction(this, "OrderEventsFetchFunction", {
+            functionName: "OrderEventsFetchFunction",
+            entry: "lambda/orderEventsFetchFunction.js", //codigo que vai ser executado
+            handler: "handler", //nome do metodo que vai ser invocado no arquivo
+            memorySize: 128,
+            timeout: cdk.Duration.seconds(30),
+            tracing: lambda.Tracing.ACTIVE, //habilita a funcao lambda pra gerar servicos do x-ray
+            insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_98_0,
+            environment: {
+                EVENTS_DDB: props.eventsDdb.tableName
+            },
+            bundling: {
+                minify: false,
+                sourceMap: false,
+            }
+        })
+
+        //Restricoes de permissoes e pesquisa no index pra fetch de eventos de pedidos
+        const eventsFetchDdbPolicy = new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['dynamodb:Query'],
+            resources: [`${props.eventsDdb.tableArn}/index/emailIdx`]
+        })
+        
+        this.orderEventsFetchHandler.addToRolePolicy(eventsFetchDdbPolicy)
 
     }
 

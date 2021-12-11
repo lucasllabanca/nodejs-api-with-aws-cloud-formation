@@ -41,7 +41,7 @@ function createEvent(body) {
     console.log(`Creating order event - MessageId: ${body.MessageId}`) //Mesmo MessageId de quando publiquei o evento
 
     const timestamp = Date.now()
-    const ttl = ~~(timestamp / 1000 + 5 * 60) //timestamp em s + 5 Minutos
+    const ttl = ~~(timestamp / 1000 + 60 * 60) //timestamp em s + 5 Minutos - aumentou pra 1h pra testes
     const params = {
         TableName: eventsDdb,
         Item: {

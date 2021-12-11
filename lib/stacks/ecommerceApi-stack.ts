@@ -6,7 +6,8 @@ import * as lambdaNodeJS from "@aws-cdk/aws-lambda-nodejs";
 //interface pra conseguir passar varios stack handlers ao mesmo tempo,e nao ficar com 30 parametros
 interface EcommerceApiStackProps extends cdk.StackProps {
     productsHandler: lambdaNodeJS.NodejsFunction,
-    ordersHandler: lambdaNodeJS.NodejsFunction
+    ordersHandler: lambdaNodeJS.NodejsFunction,
+    orderEventsFetchHandler: lambdaNodeJS.NodejsFunction
 }
 
 export class EcommerceApiStack extends cdk.Stack {
@@ -170,6 +171,26 @@ export class EcommerceApiStack extends cdk.Stack {
             value: api.url,
         });
 
+        //GET /orders/events
+        const orderEventsResource = ordersResource.addResource("events")
+        const orderEventsFunctionIntegration = new apigateway.LambdaIntegration(props.orderEventsFetchHandler)
+
+        //GET /orders/events?email=lucasllabanca@gmail.com&eventType=ORDER_CREATED
+        //GET /orders/events?email=lucasllabanca@gmail.com
+
+        const orderEventsValidator = new apigateway.RequestValidator(this, "OrderEventsValidator", {
+            restApi: api,
+            requestValidatorName: "Order events fetch parameters",
+            validateRequestParameters: true,
+
+        })
+
+        orderEventsResource.addMethod("GET", orderEventsFunctionIntegration, {
+            requestParameters: {
+                'method.request.querystring.email': true //tornando os parametros obrigatorios
+            },
+            requestValidator: orderEventsValidator
+        })
 
     }
 }

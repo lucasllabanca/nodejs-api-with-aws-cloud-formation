@@ -24,5 +24,21 @@ export class EventsDdbStack extends cdk.Stack {
             readCapacity: 1,
             writeCapacity: 1,
         });
+    
+        //Indice Global - GSI - Global Secondary Index
+        //o DynamoDB vai criar a tabela projetada com as definicoes abaixo
+        this.table.addGlobalSecondaryIndex({
+            indexName: "emailIdx",
+            partitionKey: {
+                name: "email",
+                type: dynamodb.AttributeType.STRING
+            },
+            sortKey: {
+                name: "sk",
+                type: dynamodb.AttributeType.STRING
+            },
+            projectionType: dynamodb.ProjectionType.ALL
+        })
+
     }
 }

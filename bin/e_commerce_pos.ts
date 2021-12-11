@@ -54,6 +54,7 @@ ordersApplicationStack.addDependency(productsDdbStack)
 const eCommerceApiStack = new EcommerceApiStack(app, "ECommerceApi", {
   productsHandler: productsFunctionStack.productsHandler,
   ordersHandler: ordersApplicationStack.ordersHandler,
+  orderEventsFetchHandler: ordersApplicationStack.orderEventsFetchHandler, //nao preciso add dependencia dessa stack, tah em orders
   env: environment,
   tags: tags
 });
